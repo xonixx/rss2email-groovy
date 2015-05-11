@@ -37,7 +37,7 @@ class MailSender {
         msg.setFrom(new InternetAddress(fromAddress));
         msg.setSubject(subject);
 //        msg.setText(message)
-        msg.setContent(message, "text/html")
+        msg.setContent(message, "text/html; charset=\"UTF-8\"")
 
         transporter.send(msg);
     }
