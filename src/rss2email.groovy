@@ -39,27 +39,12 @@ class MailSender {
 
 @Log4j
 class Rss2Email {
-    Rss2Email(String[] args) {
-        if (args.length == 0) {
-            log.error("Provide config file!")
-            System.exit(1)
-        }
+    Rss2Email(ConfigObject config) {
+        String url = config.url
 
-        String fName = args[0]
-        File cfgFile = new File(fName)
-
-        if (!cfgFile.isFile()) {
-            log.error("Not a valid config file: $fName")
-            System.exit(1)
-        }
-
-        def configSlurper = new ConfigSlurper()
-        ConfigObject cfg = configSlurper.parse(cfgFile.toURI().toURL())
-
-        String url = cfg.url
         log.debug("Processing URL: $url")
 
-        DB db = DBMaker.newFileDB(new File(".rss2email.db"))
+        DB db = DBMaker.newFileDB(new File(config.rss2emaildb as String))
 //                .closeOnJvmShutdown()
                 .make()
 
@@ -92,5 +77,28 @@ class Rss2Email {
     }
 }
 
-new Rss2Email(args)
-//MailSender.sendmail("<b>test</b> <i>body</i>", "test subj", "xonixx@gmail.com", "rss2email@example.com", "localhost", "10025")
+@Log4j
+class CfgParser {
+    ConfigObject config
+
+    CfgParser(String[] args) {
+        if (args.length == 0) {
+            log.error("Provide config file!")
+            System.exit(1)
+        }
+
+        String fName = args[0]
+        File cfgFile = new File(fName)
+
+        if (!cfgFile.isFile()) {
+            log.error("Not a valid config file: $fName")
+            System.exit(1)
+        }
+
+        def configSlurper = new ConfigSlurper()
+        config = configSlurper.parse(cfgFile.toURI().toURL())
+    }
+}
+
+new Rss2Email(new CfgParser(args).config)
+//MailSender.sendmail("<b>test</b> <i>body</i>", "test subj", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>", "localhost", "10025")
