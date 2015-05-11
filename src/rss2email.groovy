@@ -65,19 +65,29 @@ class Rss2Email {
             !map.containsKey(uid)
         }
 
+        MailSender mailSender = new MailSender(config.smtpHost as String, config.smtpPort as String)
+
         int limitNewCnt = config.limitNewCnt
-        log.info("Encountered ${newItems.size()}, limiting to $limitNewCnt")
 
-        newItems.each {
-            println('------------------------')
-            println("title: ${it.title}")
-            println("creator: ${it.creator}")
-            println("date: ${it.date}")
+        log.info("Encountered cnt=${items.size()}, new=${newItems.size()}, limiting to $limitNewCnt")
 
-            map[uid(it)] = true
+        if (limitNewCnt > 0 && newItems.size() > limitNewCnt) {
+            newItems = newItems.subList(0, limitNewCnt)
         }
 
+        newItems.each {
+            log.debug("New: (${it.creator}) ${it.title}")
 
+            map[uid(it)] = true
+
+            StringBuilder body = new StringBuilder()
+            body << '<h1><a href="' << it.link << '" target="_blank">' << it.title << '</a></h1>'
+            body << it.description
+
+            String from = '"' + (it.creator as String).replace('"', "'") + '" <' + config.emailFrom + '>'
+
+            mailSender.send(it.title as String, body.toString(), config.emailTo as String, from)
+        }
 
         db.commit()
         db.close()
@@ -112,5 +122,5 @@ class CfgParser {
 }
 
 def config = new CfgParser(args).config
-//new Rss2Email(config)
-new MailSender(config.smtpHost as String, config.smtpPort as String).send("test subj 1", "<b>test</b> <i>body</i>", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")
+new Rss2Email(config)
+//new MailSender(config.smtpHost as String, config.smtpPort as String).send("test subj 1", "<b>test</b> <i>body</i>", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")
