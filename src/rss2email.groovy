@@ -9,13 +9,21 @@ import javax.mail.Transport
 import javax.mail.internet.*
 
 class MailSender {
-    static void sendmail(String message, String subject, String toAddress, String fromAddress, String host, String port) {
+    private Session lSession
+    private Transport transporter
+
+    MailSender(String host, String port) {
         Properties mprops = new Properties();
         mprops.setProperty("mail.transport.protocol", "smtp");
         mprops.setProperty("mail.host", host);
         mprops.setProperty("mail.smtp.port", port);
 
-        Session lSession = Session.getDefaultInstance(mprops, null);
+        lSession = Session.getDefaultInstance(mprops, null)
+        transporter = lSession.getTransport("smtp");
+        transporter.connect();
+    }
+
+    void send(String subject, String message, String toAddress, String fromAddress) {
         MimeMessage msg = new MimeMessage(lSession);
 
         StringTokenizer tok = new StringTokenizer(toAddress, ";");
@@ -31,8 +39,6 @@ class MailSender {
 //        msg.setText(message)
         msg.setContent(message, "text/html")
 
-        Transport transporter = lSession.getTransport("smtp");
-        transporter.connect();
         transporter.send(msg);
     }
 }
@@ -59,6 +65,9 @@ class Rss2Email {
             !map.containsKey(uid)
         }
 
+        int limitNewCnt = config.limitNewCnt
+        log.info("Encountered ${newItems.size()}, limiting to $limitNewCnt")
+
         newItems.each {
             println('------------------------')
             println("title: ${it.title}")
@@ -67,6 +76,8 @@ class Rss2Email {
 
             map[uid(it)] = true
         }
+
+
 
         db.commit()
         db.close()
@@ -100,5 +111,6 @@ class CfgParser {
     }
 }
 
-new Rss2Email(new CfgParser(args).config)
-//MailSender.sendmail("<b>test</b> <i>body</i>", "test subj", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>", "localhost", "10025")
+def config = new CfgParser(args).config
+//new Rss2Email(config)
+new MailSender(config.smtpHost as String, config.smtpPort as String).send("test subj 1", "<b>test</b> <i>body</i>", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")
