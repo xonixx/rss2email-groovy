@@ -49,6 +49,8 @@ class Rss2Email {
         ConfigObject config = cfgParser.config
         Opts opts = cfgParser.opts
 
+        Log4jInit.init(config.logFile ?: null)
+
         DB db = DBMaker.newFileDB(new File(config.rss2emaildb as String))
                 .make()
 
@@ -159,13 +161,18 @@ class CfgParser {
 class Log4jInit {
     public static String PATTERN = "%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1} - %m%n"
 
-    static void init(String file) {
+    static void init(String fileName) {
         LogManager.resetConfiguration()
-        BasicConfigurator.configure(new ConsoleAppender(new PatternLayout(PATTERN)))
+        def layout = new PatternLayout(PATTERN)
+
+        BasicConfigurator.configure(new ConsoleAppender(layout))
+
+        if (fileName)
+            BasicConfigurator.configure(new FileAppender(layout, fileName))
+
         LogManager.rootLogger.level = Level.DEBUG
     }
 }
 
-Log4jInit.init(null)
 new Rss2Email(new CfgParser(args))
 //new MailSender(config.smtpHost as String, config.smtpPort as String).send("test subj 1", "<b>test</b> <i>body</i>", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")

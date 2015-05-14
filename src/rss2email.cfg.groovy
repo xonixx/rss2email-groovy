@@ -19,3 +19,8 @@ limitNewCnt = 3
 
 smtpHost = 'localhost'
 smtpPort = 10025
+
+/**
+ * log file location - optional
+ */
+logFile='rss2email.log'
