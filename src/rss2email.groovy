@@ -1,5 +1,6 @@
 @Grapes(@Grab(group = 'log4j', module = 'log4j', version = '1.2.17'))
 import groovy.util.logging.Log4j
+import org.apache.log4j.*
 @Grapes(@Grab(group = 'org.mapdb', module = 'mapdb', version = '1.0.7'))
 import org.mapdb.*
 
@@ -111,6 +112,7 @@ class Rss2Email {
 class Opts {
     boolean doNotSend
 }
+
 @Log4j
 class CfgParser {
     ConfigObject config
@@ -154,5 +156,16 @@ class CfgParser {
     }
 }
 
+class Log4jInit {
+    public static String PATTERN = "%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1} - %m%n"
+
+    static void init(String file) {
+        LogManager.resetConfiguration()
+        BasicConfigurator.configure(new ConsoleAppender(new PatternLayout(PATTERN)))
+        LogManager.rootLogger.level = Level.DEBUG
+    }
+}
+
+Log4jInit.init(null)
 new Rss2Email(new CfgParser(args))
 //new MailSender(config.smtpHost as String, config.smtpPort as String).send("test subj 1", "<b>test</b> <i>body</i>", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")
