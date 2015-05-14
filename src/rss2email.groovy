@@ -44,7 +44,10 @@ class MailSender {
 
 @Log4j
 class Rss2Email {
-    Rss2Email(ConfigObject config) {
+    Rss2Email(CfgParser cfgParser) {
+        ConfigObject config = cfgParser.config
+        Opts opts = cfgParser.opts
+
         DB db = DBMaker.newFileDB(new File(config.rss2emaildb as String))
                 .make()
 
@@ -64,7 +67,9 @@ class Rss2Email {
                 !map.containsKey(uid)
             }
 
-            MailSender mailSender = new MailSender(config.smtpHost as String, config.smtpPort as String)
+            MailSender mailSender = null
+            if (!opts.doNotSend)
+                mailSender = new MailSender(config.smtpHost as String, config.smtpPort as String)
 
             int limitNewCnt = config.limitNewCnt
 
@@ -87,7 +92,10 @@ class Rss2Email {
 
                 String from = '"' + (it.creator as String).replace('"', "'") + '" <' + config.emailFrom + '>'
 
-                mailSender.send(subj, body.toString(), config.emailTo as String, from)
+                if (!opts.doNotSend)
+                    mailSender.send(subj, body.toString(), config.emailTo as String, from)
+                else
+                    log.info('  Not sending.')
             }
         }
 
@@ -100,29 +108,51 @@ class Rss2Email {
     }
 }
 
+class Opts {
+    boolean doNotSend
+}
 @Log4j
 class CfgParser {
     ConfigObject config
+    Opts opts
 
     CfgParser(String[] args) {
-        if (args.length == 0) {
-            log.error("Provide config file!")
+        def cliBuilder = new CliBuilder(usage: 'groovy rss2email.groovy [options] config_file')
+
+        cliBuilder.d('do not send emails (useful for initial run)')
+
+        OptionAccessor options = cliBuilder.parse(args)
+
+        if (!options) {
+            cliBuilder.usage()
             System.exit(1)
         }
 
-        String fName = args[0]
+        List<String> arguments = options.arguments()
+
+        if (!arguments) {
+            log.error("Provide config_file!")
+            cliBuilder.usage()
+            System.exit(1)
+        }
+
+        String fName = arguments[0]
         File cfgFile = new File(fName)
 
         if (!cfgFile.isFile()) {
-            log.error("Not a valid config file: $fName")
+            log.error("Not a valid config_file: $fName")
+            cliBuilder.usage()
             System.exit(1)
         }
+
+        opts = new Opts()
+        if (options.d)
+            opts.doNotSend = true
 
         def configSlurper = new ConfigSlurper()
         config = configSlurper.parse(cfgFile.toURI().toURL())
     }
 }
 
-def config = new CfgParser(args).config
-new Rss2Email(config)
+new Rss2Email(new CfgParser(args))
 //new MailSender(config.smtpHost as String, config.smtpPort as String).send("test subj 1", "<b>test</b> <i>body</i>", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")
