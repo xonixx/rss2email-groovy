@@ -36,7 +36,6 @@ class MailSender {
         msg.setRecipients(MimeMessage.RecipientType.TO, to);
         msg.setFrom(new InternetAddress(fromAddress));
         msg.setSubject(subject);
-//        msg.setText(message)
         msg.setContent(message, "text/html; charset=\"UTF-8\"")
 
         transporter.send(msg);
@@ -46,47 +45,50 @@ class MailSender {
 @Log4j
 class Rss2Email {
     Rss2Email(ConfigObject config) {
-        String url = config.url
-
-        log.debug("Processing URL: $url")
-
         DB db = DBMaker.newFileDB(new File(config.rss2emaildb as String))
-//                .closeOnJvmShutdown()
                 .make()
 
-        BTreeMap map = db.getTreeMap(url)
+        Map<String, String> urls = config.urls
 
-        def rss = new XmlSlurper().parse(url)
+        urls.each { String rssId, String url ->
+            log.debug("Processing RSS: $rssId -> $url")
 
-        List items = rss.channel.item.grep()
+            BTreeMap map = db.getTreeMap(rssId)
 
-        List newItems = items.findAll {
-            String uid = uid(it)
-            !map.containsKey(uid)
-        }
+            def rss = new XmlSlurper().parse(url)
 
-        MailSender mailSender = new MailSender(config.smtpHost as String, config.smtpPort as String)
+            List items = rss.channel.item.grep()
 
-        int limitNewCnt = config.limitNewCnt
+            List newItems = items.findAll {
+                String uid = uid(it)
+                !map.containsKey(uid)
+            }
 
-        log.info("Encountered cnt=${items.size()}, new=${newItems.size()}, limiting to $limitNewCnt")
+            MailSender mailSender = new MailSender(config.smtpHost as String, config.smtpPort as String)
 
-        if (limitNewCnt > 0 && newItems.size() > limitNewCnt) {
-            newItems = newItems.subList(0, limitNewCnt)
-        }
+            int limitNewCnt = config.limitNewCnt
 
-        newItems.each {
-            log.debug("New: (${it.creator}) ${it.title}")
+            log.info("Encountered cnt=${items.size()}, new=${newItems.size()}, limiting to $limitNewCnt")
 
-            map[uid(it)] = true
+            if (limitNewCnt > 0 && newItems.size() > limitNewCnt) {
+                newItems = newItems.subList(0, limitNewCnt)
+            }
 
-            StringBuilder body = new StringBuilder()
-            body << '<h1><a href="' << it.link << '" target="_blank">' << it.title << '</a></h1>'
-            body << it.description
+            newItems.each {
+                log.debug("New: (${it.creator}) ${it.title}")
 
-            String from = '"' + (it.creator as String).replace('"', "'") + '" <' + config.emailFrom + '>'
+                map[uid(it)] = true
 
-            mailSender.send(it.title as String, body.toString(), config.emailTo as String, from)
+                String subj = "[$rssId] $it.title"
+
+                StringBuilder body = new StringBuilder()
+                body << '<h1><a href="' << it.link << '" target="_blank">' << it.title << '</a></h1>'
+                body << it.description
+
+                String from = '"' + (it.creator as String).replace('"', "'") + '" <' + config.emailFrom + '>'
+
+                mailSender.send(subj, body.toString(), config.emailTo as String, from)
+            }
         }
 
         db.commit()
