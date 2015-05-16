@@ -18,8 +18,8 @@ class MailSender {
         mprops.setProperty("mail.transport.protocol", "smtp");
         mprops.setProperty("mail.host", host);
         mprops.setProperty("mail.smtp.port", port);
-//        mprops.setProperty("mail.mime.charset", 'UTF-8');
-        System.setProperty("file.encoding", 'UTF-8')
+//        mprops.setProperty("mail.mime.charset", Const.UTF_8);
+        System.setProperty("file.encoding", Const.UTF_8)
 
         lSession = Session.getDefaultInstance(mprops, null)
         transporter = lSession.getTransport("smtp");
@@ -39,7 +39,7 @@ class MailSender {
         msg.setRecipients(MimeMessage.RecipientType.TO, to);
         msg.setFrom(new InternetAddress(fromAddress));
         msg.setSubject(subject);
-        msg.setContent(message, "text/html; charset=\"UTF-8\"")
+        msg.setContent(message, "text/html; charset=\"$Const.UTF_8\"")
 
         transporter.send(msg);
     }
@@ -156,7 +156,7 @@ class CfgParser {
             opts.doNotSend = true
 
         def configSlurper = new ConfigSlurper()
-        config = configSlurper.parse(cfgFile.toURI().toURL())
+        config = configSlurper.parse(cfgFile.getText(Const.UTF_8))
     }
 }
 
@@ -174,6 +174,10 @@ class Log4jInit {
 
         LogManager.rootLogger.level = Level.DEBUG
     }
+}
+
+class Const {
+    static final String UTF_8 = 'UTF-8'
 }
 
 new Rss2Email(new CfgParser(args))
