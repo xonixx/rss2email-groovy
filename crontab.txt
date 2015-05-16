@@ -1,0 +1,3 @@
+JAVA_HOME=/usr/local/diablo-jdk1.6.0/
+
+*/10 * * * * /home/users/xonix/.gvm/groovy/current/bin/groovy -c UTF-8 /home/users/xonix/rss2email/rss2email.groovy /home/users/xonix/rss2email/rss2email.cfg.my.groovy
