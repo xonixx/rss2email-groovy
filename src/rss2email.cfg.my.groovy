@@ -6,7 +6,7 @@ urls = [
         'xonix': 'http://zlo.rt.mipt.ru:7500/search?rss&st=adv&text=%D0%BA%D1%81%D0%BE%D0%BD%D0%B8%D0%BA%D1%81+xonix+%D0%B1%D0%BE%D1%80%D0%B4%D0%BE%D0%BF%D0%BE%D0%B8%D1%81%D0%BA&topic=-1&inTitle=on&inBody=on&nick=&host=&sep=&site=0&pageSize=0&sort=date',
 ]
 
-def FOLDER='/home/users/xonix'
+def FOLDER='/home/users/xonix/rss2email'
 rss2emaildb = "$FOLDER/.rss2email.db"
 
 emailTo = 'xonixx@gmail.com'
