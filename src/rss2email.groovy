@@ -18,6 +18,8 @@ class MailSender {
         mprops.setProperty("mail.transport.protocol", "smtp");
         mprops.setProperty("mail.host", host);
         mprops.setProperty("mail.smtp.port", port);
+//        mprops.setProperty("mail.mime.charset", 'UTF-8');
+        System.setProperty("file.encoding", 'UTF-8')
 
         lSession = Session.getDefaultInstance(mprops, null)
         transporter = lSession.getTransport("smtp");
@@ -175,4 +177,4 @@ class Log4jInit {
 }
 
 new Rss2Email(new CfgParser(args))
-//new MailSender(config.smtpHost as String, config.smtpPort as String).send("test subj 1", "<b>test</b> <i>body</i>", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")
+//new MailSender('localhost', '25').send("test subj 1 привет", "<b>test</b> <i>body</i> мир", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")

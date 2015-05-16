@@ -17,3 +17,4 @@
 /out/
 
 .rss2email.db*
+src/rss2email.log
