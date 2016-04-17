@@ -14,34 +14,34 @@ class MailSender {
     private Transport transporter
 
     MailSender(String host, String port) {
-        Properties mprops = new Properties();
-        mprops.setProperty("mail.transport.protocol", "smtp");
-        mprops.setProperty("mail.host", host);
-        mprops.setProperty("mail.smtp.port", port);
-//        mprops.setProperty("mail.mime.charset", Const.UTF_8);
+        Properties mprops = new Properties()
+        mprops.setProperty("mail.transport.protocol", "smtp")
+        mprops.setProperty("mail.host", host)
+        mprops.setProperty("mail.smtp.port", port)
+//        mprops.setProperty("mail.mime.charset", Const.UTF_8)
         System.setProperty("file.encoding", Const.UTF_8)
 
         lSession = Session.getDefaultInstance(mprops, null)
-        transporter = lSession.getTransport("smtp");
-        transporter.connect();
+        transporter = lSession.getTransport("smtp")
+        transporter.connect()
     }
 
     void send(String subject, String message, String toAddress, String fromAddress) {
-        MimeMessage msg = new MimeMessage(lSession);
+        MimeMessage msg = new MimeMessage(lSession)
 
-        StringTokenizer tok = new StringTokenizer(toAddress, ";");
-        ArrayList emailTos = new ArrayList();
+        StringTokenizer tok = new StringTokenizer(toAddress, ";")
+        ArrayList emailTos = new ArrayList()
         while (tok.hasMoreElements()) {
-            emailTos.add(new InternetAddress(tok.nextElement().toString()));
+            emailTos.add(new InternetAddress(tok.nextElement().toString()))
         }
         InternetAddress[] to = new InternetAddress[emailTos.size()];
-        to = (InternetAddress[]) emailTos.toArray(to);
-        msg.setRecipients(MimeMessage.RecipientType.TO, to);
-        msg.setFrom(new InternetAddress(fromAddress));
-        msg.setSubject(subject);
+        to = (InternetAddress[]) emailTos.toArray(to)
+        msg.setRecipients(MimeMessage.RecipientType.TO, to)
+        msg.setFrom(new InternetAddress(fromAddress))
+        msg.setSubject(subject)
         msg.setContent(message, "text/html; charset=\"$Const.UTF_8\"")
 
-        transporter.send(msg);
+        transporter.send(msg)
     }
 }
 
