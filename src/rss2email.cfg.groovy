@@ -20,6 +20,8 @@ limitNewCnt = 3
 smtpHost = 'localhost'
 smtpPort = 10025
 
+sendgrid='YOUR-SENDGRID-API-KEY'
+
 /**
  * log file location - optional
  */

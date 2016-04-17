@@ -206,8 +206,8 @@ class Const {
     static final String UTF_8 = 'UTF-8'
 }
 
-//new Rss2Email(new CfgParser(args))
+new Rss2Email(new CfgParser(args))
 
-Log4jInit.init()
-def cfg = new CfgParser(args).config
-new MailSender(cfg.sendgrid).send("test subj 2 привет", "<b>test</b> <i>body</i> мир", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")
+//Log4jInit.init()
+//def cfg = new CfgParser(args).config
+//new MailSender(cfg.sendgrid).send("test subj 2 привет", "<b>test</b> <i>body</i> мир", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")
