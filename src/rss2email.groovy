@@ -35,13 +35,18 @@ class MailSender {
         transporter.connect()
     }
 
-    void send(String subject, String message, String toAddress, String fromAddress) {
+    void send(String subject, String htmlBody,
+              String toAddress,
+              String fromAddress, String fromAddressName) {
+
         if (sendgrid) {
             SendGrid.Email email = new SendGrid.Email()
             email.addTo(toAddress)
             email.setFrom(fromAddress)
+            if (fromAddressName)
+                email.setFromName(fromAddressName)
             email.setSubject(subject)
-            email.setHtml(message)
+            email.setHtml(htmlBody)
             SendGrid.Response response = sendgrid.send(email)
             String resMsg = response.message
             if (resMsg?.contains('"errors":'))
@@ -57,9 +62,13 @@ class MailSender {
             InternetAddress[] to = new InternetAddress[emailTos.size()];
             to = (InternetAddress[]) emailTos.toArray(to)
             msg.setRecipients(MimeMessage.RecipientType.TO, to)
+
+            if (fromAddressName)
+                fromAddress = "\"${fromAddressName.replace('"', "'")}\" <$fromAddress>"
+
             msg.setFrom(new InternetAddress(fromAddress))
             msg.setSubject(subject)
-            msg.setContent(message, "text/html; charset=\"$Const.UTF_8\"")
+            msg.setContent(htmlBody, "text/html; charset=\"$Const.UTF_8\"")
 
             transporter.send(msg)
         }
@@ -120,10 +129,8 @@ class Rss2Email {
                 body << '<h1><a href="' << it.link << '" target="_blank">' << it.title << '</a></h1>'
                 body << it.description
 
-                String from = '"' + (it.creator as String).replace('"', "'") + '" <' + config.emailFrom + '>'
-
                 if (!opts.doNotSend)
-                    mailSender.send(subj, body.toString(), config.emailTo as String, from)
+                    mailSender.send(subj, body.toString(), config.emailTo as String, config.emailFrom as String, it.creator as String)
                 else
                     log.info('  Not sending.')
             }
@@ -210,4 +217,4 @@ new Rss2Email(new CfgParser(args))
 
 //Log4jInit.init()
 //def cfg = new CfgParser(args).config
-//new MailSender(cfg.sendgrid).send("test subj 2 привет", "<b>test</b> <i>body</i> мир", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")
+//new MailSender(cfg.sendgrid).send("test subj 1 привет", "<b>test</b> <i>body</i> мир", "xonixx@gmail.com", "rss2email@example.com", "иван@domain")
