@@ -9,9 +9,18 @@ import javax.mail.Transport
 @Grapes(@Grab(group = 'org.apache.geronimo.javamail', module = 'geronimo-javamail_1.4_mail', version = '1.8.4'))
 import javax.mail.internet.*
 
+@Grapes(@Grab(group='com.sendgrid', module='sendgrid-java', version='2.2.2'))
+import com.sendgrid.SendGrid
+
+@Log4j
 class MailSender {
     private Session lSession
     private Transport transporter
+    private SendGrid sendgrid
+
+    MailSender(String sendgridKey) {
+        sendgrid = new SendGrid(sendgridKey)
+    }
 
     MailSender(String host, String port) {
         Properties mprops = new Properties()
@@ -27,21 +36,33 @@ class MailSender {
     }
 
     void send(String subject, String message, String toAddress, String fromAddress) {
-        MimeMessage msg = new MimeMessage(lSession)
+        if (sendgrid) {
+            SendGrid.Email email = new SendGrid.Email()
+            email.addTo(toAddress)
+            email.setFrom(fromAddress)
+            email.setSubject(subject)
+            email.setHtml(message)
+            SendGrid.Response response = sendgrid.send(email)
+            String resMsg = response.message
+            if (resMsg?.contains('"errors":'))
+                log.error(resMsg)
+        } else {
+            MimeMessage msg = new MimeMessage(lSession)
 
-        StringTokenizer tok = new StringTokenizer(toAddress, ";")
-        ArrayList emailTos = new ArrayList()
-        while (tok.hasMoreElements()) {
-            emailTos.add(new InternetAddress(tok.nextElement().toString()))
+            StringTokenizer tok = new StringTokenizer(toAddress, ";")
+            ArrayList emailTos = new ArrayList()
+            while (tok.hasMoreElements()) {
+                emailTos.add(new InternetAddress(tok.nextElement().toString()))
+            }
+            InternetAddress[] to = new InternetAddress[emailTos.size()];
+            to = (InternetAddress[]) emailTos.toArray(to)
+            msg.setRecipients(MimeMessage.RecipientType.TO, to)
+            msg.setFrom(new InternetAddress(fromAddress))
+            msg.setSubject(subject)
+            msg.setContent(message, "text/html; charset=\"$Const.UTF_8\"")
+
+            transporter.send(msg)
         }
-        InternetAddress[] to = new InternetAddress[emailTos.size()];
-        to = (InternetAddress[]) emailTos.toArray(to)
-        msg.setRecipients(MimeMessage.RecipientType.TO, to)
-        msg.setFrom(new InternetAddress(fromAddress))
-        msg.setSubject(subject)
-        msg.setContent(message, "text/html; charset=\"$Const.UTF_8\"")
-
-        transporter.send(msg)
     }
 }
 
@@ -59,7 +80,7 @@ class Rss2Email {
         Map<String, String> urls = config.urls
 
         urls.each { String rssId, String url ->
-            log.debug("Processing RSS: $rssId -> $url")
+            log.info("Processing RSS: $rssId -> $url")
 
             BTreeMap map = db.getTreeMap(rssId)
 
@@ -73,8 +94,12 @@ class Rss2Email {
             }
 
             MailSender mailSender = null
-            if (!opts.doNotSend)
-                mailSender = new MailSender(config.smtpHost as String, config.smtpPort as String)
+            if (!opts.doNotSend) {
+                if (config.sendgrid)
+                    mailSender = new MailSender(config.sendgrid as String)
+                else
+                    mailSender = new MailSender(config.smtpHost as String, config.smtpPort as String)
+            }
 
             int limitNewCnt = config.limitNewCnt
 
@@ -85,7 +110,7 @@ class Rss2Email {
             }
 
             newItems.each {
-                log.debug("New: (${it.creator}) ${it.title}")
+                log.info("New: (${it.creator}) ${it.title}")
 
                 map[uid(it)] = true
 
@@ -163,7 +188,7 @@ class CfgParser {
 class Log4jInit {
     public static String PATTERN = "%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1} - %m%n"
 
-    static void init(String fileName) {
+    static void init(String fileName = null) {
         LogManager.resetConfiguration()
         def layout = new PatternLayout(PATTERN)
 
@@ -172,7 +197,8 @@ class Log4jInit {
         if (fileName)
             BasicConfigurator.configure(new FileAppender(layout, fileName))
 
-        LogManager.rootLogger.level = Level.DEBUG
+//        LogManager.rootLogger.level = Level.DEBUG
+        LogManager.rootLogger.level = Level.INFO
     }
 }
 
@@ -180,5 +206,8 @@ class Const {
     static final String UTF_8 = 'UTF-8'
 }
 
-new Rss2Email(new CfgParser(args))
-//new MailSender('localhost', '25').send("test subj 1 привет", "<b>test</b> <i>body</i> мир", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")
+//new Rss2Email(new CfgParser(args))
+
+Log4jInit.init()
+def cfg = new CfgParser(args).config
+new MailSender(cfg.sendgrid).send("test subj 2 привет", "<b>test</b> <i>body</i> мир", "xonixx@gmail.com", "\"Иван@host.com\" <rss2email@example.com>")
